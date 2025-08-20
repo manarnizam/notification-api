@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  name              String
+  role              UserRole @default(STUDENT)
+  passwordHash      String
+  emailEnabled    Boolean             @default(false)
+  inAppEnabled    Boolean             @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  sentNotifications     Notification[] @relation("NotificationSender")
+  receivedNotifications Notification[] @relation("NotificationRecipient")
+  notificationChannels  NotificationChannel[]
+
+  @@map("users")
+}
+
+model Notification {
+  id           String           @id @default(cuid())
+  title        String
+  message      String
+  type         NotificationType
+  senderId     String
+  recipientId  String
+  status       NotificationStatus @default(PENDING)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  // Relations
+  sender    User @relation("NotificationSender", fields: [senderId], references: [id])
+  recipient User @relation("NotificationRecipient", fields: [recipientId], references: [id])
+  deliveries NotificationDelivery[]
+
+  @@map("notifications")
+}
+
+model NotificationChannel {
+  id          String              @id @default(cuid())
+  userId      String
+  type        NotificationChannelType
+  value       String              // email address, FCM token, webhook URL, etc.
+  isActive    Boolean             @default(true)
+  isVerified  Boolean             @default(false)
+  metadata    Json?               // Additional channel-specific data
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@unique([userId, type, value])
+  @@map("notification_channels")
+}
+
+model NotificationDelivery {
+  id              String                    @id @default(cuid())
+  notificationId  String
+  channelId       String
+  status          NotificationDeliveryStatus @default(PENDING)
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  failedAt        DateTime?
+  errorMessage    String?
+  retryCount      Int                       @default(0)
+  metadata        Json?                     // Delivery-specific data (message ID, etc.)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  // Relations
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channel      NotificationChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@map("notification_deliveries")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum NotificationType {
+  ANNOUNCEMENT
+  ASSIGNMENT
+  GRADE
+  REMINDER
+  SYSTEM
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  READ
+  FAILED
+}
+
+enum NotificationChannelType {
+  EMAIL
+  FCM
+  WEBHOOK
+  SMS
+  SLACK
+  DISCORD
+  TELEGRAM
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  RETRY
+} 

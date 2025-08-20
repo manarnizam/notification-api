@@ -1,0 +1,180 @@
+# Monitoring Configuration for Notification API
+# This file can be used with various monitoring tools and cron jobs
+
+# Health Check Endpoints
+health_endpoints:
+  - name: "Basic Health Check"
+    url: "/health"
+    method: "GET"
+    expected_status: 200
+    timeout: 30
+    retries: 3
+    
+  - name: "Database Health Check"
+    url: "/health/db"
+    method: "GET"
+    expected_status: 200
+    timeout: 30
+    retries: 3
+    
+  - name: "Notification Provider Health Check"
+    url: "/health/notifications"
+    method: "GET"
+    expected_status: 200
+    timeout: 30
+    retries: 3
+
+# API Endpoints to Monitor
+api_endpoints:
+  - name: "Swagger Documentation"
+    url: "/api/docs"
+    method: "GET"
+    expected_status: 200
+    timeout: 30
+    
+  - name: "Authentication Endpoint"
+    url: "/auth/login"
+    method: "POST"
+    expected_status: 400  # Should return 400 for missing credentials
+    timeout: 30
+    headers:
+      Content-Type: "application/json"
+    body: "{}"
+
+# Performance Thresholds
+performance_thresholds:
+  response_time:
+    warning: 1000    # 1 second
+    critical: 5000   # 5 seconds
+  error_rate:
+    warning: 5       # 5%
+    critical: 10     # 10%
+  availability:
+    warning: 95      # 95%
+    critical: 90     # 90%
+
+# Alerting Configuration
+alerts:
+  email:
+    enabled: true
+    recipients:
+      - "admin@yourdomain.com"
+      - "devops@yourdomain.com"
+    smtp:
+      host: "smtp.gmail.com"
+      port: 587
+      username: "alerts@yourdomain.com"
+      password: "${SMTP_PASSWORD}"
+  
+  slack:
+    enabled: false
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    channel: "#alerts"
+  
+  pagerduty:
+    enabled: false
+    service_key: "${PAGERDUTY_SERVICE_KEY}"
+
+# Monitoring Schedule
+schedule:
+  health_checks:
+    frequency: "5m"    # Every 5 minutes
+    timeout: 30
+    
+  detailed_checks:
+    frequency: "15m"   # Every 15 minutes
+    timeout: 60
+    
+  performance_metrics:
+    frequency: "1m"    # Every minute
+    timeout: 10
+
+# Logging Configuration
+logging:
+  level: "info"
+  format: "json"
+  retention:
+    days: 30
+  rotation:
+    max_size: "100MB"
+    max_files: 10
+
+# Database Monitoring
+database_monitoring:
+  connection_pool:
+    max_connections: 10
+    min_connections: 2
+    idle_timeout: 30000
+    
+  slow_query_threshold: 1000  # 1 second
+  deadlock_monitoring: true
+  
+  metrics:
+    - "active_connections"
+    - "idle_connections"
+    - "query_duration"
+    - "error_rate"
+
+# Notification Provider Monitoring
+notification_monitoring:
+  providers:
+    - name: "console"
+      type: "internal"
+      health_check: true
+      
+    - name: "sendgrid"
+      type: "external"
+      health_check: true
+      api_endpoint: "https://api.sendgrid.com/v3/user/profile"
+      
+    - name: "aws-ses"
+      type: "external"
+      health_check: true
+      region_check: true
+      
+    - name: "smtp"
+      type: "external"
+      health_check: true
+      connection_test: true
+
+# Security Monitoring
+security_monitoring:
+  failed_auth_attempts:
+    threshold: 10
+    window: "5m"
+    action: "alert"
+    
+  rate_limiting:
+    requests_per_minute: 100
+    burst_size: 20
+    
+  suspicious_activity:
+    enabled: true
+    patterns:
+      - "multiple_failed_logins"
+      - "unusual_ip_addresses"
+      - "bulk_notification_creation"
+
+# Backup and Recovery
+backup_monitoring:
+  database_backup:
+    frequency: "daily"
+    retention: "30d"
+    health_check: true
+    
+  notification_logs:
+    frequency: "hourly"
+    retention: "7d"
+    health_check: true
+
+# Deployment Monitoring
+deployment_monitoring:
+  health_check_after_deploy: true
+  rollback_threshold: 3  # Failed health checks before rollback
+  deployment_timeout: 300  # 5 minutes
+  
+  post_deployment_checks:
+    - "health_endpoint"
+    - "database_connectivity"
+    - "notification_provider"
+    - "api_functionality" 
